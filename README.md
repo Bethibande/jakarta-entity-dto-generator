@@ -49,7 +49,7 @@ The serialized output of this DTO might look like this:
   "id": 1
 }
 ```
-If we remove `expandProperties = {"entity"}` from the annotation the entity will be deflated into a single `entityId` field like this:
+If we remove `expandProperties = {"entity"}` from the annotation the entity field will be deflated into a single `entityId` field like this:
 ```json
 {
   "someString": "abc",
