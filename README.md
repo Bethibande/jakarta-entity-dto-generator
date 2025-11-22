@@ -1,14 +1,20 @@
 # Jakarta entity dto generator
 This is a simple annotation processor meant to generate DTO classes from JPA entity definitions.
 
+> [!WARNING]
+> Only many-to-one relationships are supported at the moment.
+> One-to-many relationships and `@ElementCollection` are not yet supported.
+
 ### Example
 See [here](example/src/main/java/com/bethibande/process/example/ExampleEntity.java) for the full example.
 
 The following entity definition will generate two DTO classes: `ExampleEntityDTO` and `ExampleEntityDTOWithoutId`
 ```java
 @Entity
-@EntityDTO(expandProperties = {"entity"}) // This will generate a DTO of the full model
-@EntityDTO(excludeProperties = {"id", "entity.id"}, expandProperties = {"entity"}) // This will generate the same DTO but without id fields
+// This will generate a DTO of the full model
+@EntityDTO(expandProperties = {"entity"})
+// This will generate the same DTO but without id fields
+@EntityDTO(excludeProperties = {"id", "entity.id"}, expandProperties = {"entity"})
 public class ExampleEntity extends EntityBase {
 
     public String someString;
