@@ -13,6 +13,7 @@ import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @AutoService(javax.annotation.processing.Processor.class)
@@ -50,9 +51,14 @@ public class Processor extends AbstractProcessor {
 
             for (final EntityDTO request : requests) {
                 try {
+                    final String name = !Objects.equals(request.name(), "")
+                            ? request.name()
+                            : null;
+
                     generator.generate(new GenerationContext(
                             null,
                             persistenceUnit,
+                            name,
                             request.excludeProperties(),
                             request.expandProperties()
                     ));

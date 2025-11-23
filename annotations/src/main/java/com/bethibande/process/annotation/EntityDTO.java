@@ -11,6 +11,12 @@ import java.lang.annotation.Target;
 public @interface EntityDTO {
 
     /**
+     * Overrides the generated default class name.
+     * This value must be a valid java class name.
+     */
+    String name() default "";
+
+    /**
      * You can list properties you want to exclude from the resulting dto.
      * The processor expects the fields listed here to be property paths.
      * For embedded properties you'll need to include the property marked as embedded in the path.

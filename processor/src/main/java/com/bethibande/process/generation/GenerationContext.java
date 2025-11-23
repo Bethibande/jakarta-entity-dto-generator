@@ -26,6 +26,7 @@ public class GenerationContext {
 
     public GenerationContext(final GenerationContext parent,
                              final PersistenceUnit unit,
+                             final String nameOverride,
                              final String[] excludeProperties,
                              final String[] expandProperties) {
         this.parent = parent;
@@ -36,7 +37,9 @@ public class GenerationContext {
         this.excludePropertiesLookup = Set.of(excludeProperties);
         this.expandPropertiesLookup = Set.of(expandProperties);
 
-        this.className = generateName();
+        this.className = nameOverride != null
+                ? ClassName.get(unit.getPackageName(), nameOverride)
+                : generateName();
     }
 
     public CodeBlock read(final Property property) {
@@ -77,6 +80,7 @@ public class GenerationContext {
         final GenerationContext branch = new GenerationContext(
                 this,
                 branchedProperty,
+                null,
                 excludeProperties,
                 expandProperties
         );
@@ -130,6 +134,6 @@ public class GenerationContext {
 
         final String baseName = builder.toString();
         if (parent == null) return ClassName.get(unit.getPackageName(), baseName);
-        return parent.generateName().nestedClass(baseName);
+        return parent.getClassName().nestedClass(baseName);
     }
 }
