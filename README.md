@@ -1,6 +1,26 @@
 # Jakarta entity dto generator
 This is a simple annotation processor meant to generate DTO classes from JPA entity definitions.
 
+### Usage
+
+> [!NOTE]
+> Please note that the library is built for Java 25.
+
+Gradle
+```kts
+repositories {
+    maven {
+        url = uri("https://pckg.bethibande.com/repository/maven-releases/")
+        name = "bethibande-releases"
+    }
+}
+
+dependencies {
+    implementation("com.bethibande.process:annotations:1.0")
+    annotationProcessor("com.bethibande.process:processor:1.0")
+}
+```
+
 ### Example
 See [here](example/src/main/java/com/bethibande/process/example/ExampleEntity.java) for the full example.
 
