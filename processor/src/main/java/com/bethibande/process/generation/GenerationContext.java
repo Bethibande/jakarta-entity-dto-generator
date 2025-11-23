@@ -42,7 +42,7 @@ public class GenerationContext {
                 : generateName();
     }
 
-    public CodeBlock read(final Property property) {
+    public CodeBlock optionalRead(final Property property, final String thisLiteral) {
         final Deque<CodeBlock> blocks = new ArrayDeque<>();
         Property current = property;
 
@@ -56,7 +56,15 @@ public class GenerationContext {
             }
         }
 
-        return CodeBlock.join(blocks, ".");
+        final CodeBlock.Builder builder = CodeBlock.builder();
+        builder.add("$T.ofNullable($L.$L)", Optional.class, thisLiteral, blocks.pop());
+        if (!blocks.isEmpty()) {
+            for (final CodeBlock block : blocks) {
+                builder.add(".map(o -> o.$L)", block);
+            }
+        }
+
+        return builder.build();
     }
 
     public Collection<GenerationContext> getBranches() {

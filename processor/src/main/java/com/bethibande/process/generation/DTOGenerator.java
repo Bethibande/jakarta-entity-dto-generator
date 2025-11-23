@@ -97,26 +97,27 @@ public class DTOGenerator {
             final Property property = properties.get(i);
             final Property actualProperty = getActualTargetProperty(property, ctx);
 
-            final CodeBlock read = ctx.read(actualProperty);
+            // TODO: Refactor this mess
+            final CodeBlock read = ctx.optionalRead(actualProperty, METHOD_FROM_PARAMETER);
             if (property.type() instanceof PropertyType.EntityType && ctx.shouldExpand(property)) {
-                code.add("$T.from($L.$L)", ctx.branch(property).getClassName(), METHOD_FROM_PARAMETER, read);
+                code.add("$T.from($L.orElse(null))", ctx.branch(property).getClassName(), read);
             } else if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
                 if (ctx.shouldExpand(property)) {
                     final GenerationContext branch = ctx.branch(property);
-                    code.add("$L.$L.stream().map($T::from).toList()", METHOD_FROM_PARAMETER, read, branch.getClassName());
+                    code.add("$L.map(o -> o.stream().map($T::from).toList()).orElse(null)", read, branch.getClassName());
                 } else {
-                    final CodeBlock accessor = ctx.read(property);
+                    final CodeBlock accessor = ctx.optionalRead(property, METHOD_FROM_PARAMETER);
                     final CodeBlock.Builder mapper = CodeBlock.builder();
                     if (actualProperty.accessor() instanceof Accessor.MethodAccessor methodAccessor) {
                         mapper.add("$T::$L", collectionType.getEntityType(), methodAccessor.read());
                     } else {
-                        mapper.add("e -> e.$L", actualProperty.accessor().read());
+                        mapper.add("e -> e != null ? e.$L : null", actualProperty.accessor().read());
                     }
 
-                    code.add("$L.$L.stream().map($L).toList()", METHOD_FROM_PARAMETER, accessor, mapper.build());
+                    code.add("$L.map(o -> o.stream().map($L).toList()).orElse(null)", accessor, mapper.build());
                 }
             } else {
-                code.add("$L.$L", METHOD_FROM_PARAMETER, read);
+                code.add("$L.orElse(null)", read);
             }
 
             if (i < properties.size() - 1) {
