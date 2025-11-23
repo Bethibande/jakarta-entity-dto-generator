@@ -5,7 +5,7 @@ plugins {
     signing
 }
 
-group = "de.bethibande.process"
+group = "com.bethibande.process"
 version = "1.0"
 
 description = "DTO generator for JPA entities"
@@ -81,7 +81,7 @@ publishing {
     repositories {
         maven {
             name = "Maven-Releases"
-            url = uri("https://pckg.bethibande.com/repository/maven-snapshots/")
+            url = uri("https://pckg.bethibande.com/repository/maven-releases/")
             credentials {
                 if (providers.gradleProperty("mavenUsername").isPresent) {
                     username = providers.gradleProperty("mavenUsername").get()

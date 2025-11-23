@@ -2,7 +2,7 @@ plugins {
     id("java")
 }
 
-group = "de.bethibande.process"
+group = "com.bethibande.process"
 version = "unspecified"
 
 repositories {
