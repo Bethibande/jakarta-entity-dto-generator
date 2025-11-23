@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
@@ -49,7 +50,27 @@ public class EntityAnalyzer {
         return false;
     }
 
+    protected TypeMirror erasure(final TypeMirror typeMirror) {
+        return environment.getTypeUtils().erasure(typeMirror);
+    }
+
+    protected TypeMirror asType(final Class<?> clazz) {
+        return environment.getElementUtils().getTypeElement(clazz.getName()).asType();
+    }
+
+    protected boolean isAssignable(final TypeMirror superType, final TypeMirror to) {
+        return environment.getTypeUtils().isAssignable(superType, to);
+    }
+
     protected PropertyType toPropertyType(final TypeMirror type) {
+        if (type instanceof DeclaredType declaredType && isAssignable(erasure(declaredType), asType(Collection.class))) {
+            final Element typeSource = resolve(declaredType.getTypeArguments().getFirst());
+            if (typeSource instanceof TypeElement typeElement && isEntity(typeElement)) {
+                final TypeMirror entityType = declaredType.getTypeArguments().getFirst();
+                return new PropertyType.EntityCollectionType(type, entityType, () -> this.analyze(resolve(entityType)));
+            }
+        }
+
         final Element typeSource = resolve(type);
         if (typeSource instanceof TypeElement typeElement && isEntity(typeElement)) {
             return new PropertyType.EntityType(type, () -> this.analyze(typeElement));

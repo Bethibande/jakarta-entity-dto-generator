@@ -3,9 +3,41 @@ package com.bethibande.process.model;
 import javax.lang.model.type.TypeMirror;
 import java.util.function.Supplier;
 
-public sealed interface PropertyType permits PropertyType.EntityType, PropertyType.DirectType {
+public sealed interface PropertyType permits PropertyType.EntityCollectionType, PropertyType.EntityType, PropertyType.DirectType {
 
     TypeMirror getType();
+
+    final class EntityCollectionType implements PropertyType {
+
+        private final TypeMirror root;
+        private final TypeMirror entityType;
+        private final Supplier<PersistenceUnit> supplier;
+
+        public EntityCollectionType(final TypeMirror root,
+                                    final TypeMirror entityType,
+                                    final Supplier<PersistenceUnit> supplier) {
+            this.root = root;
+            this.entityType = entityType;
+            this.supplier = supplier;
+        }
+
+        @Override
+        public TypeMirror getType() {
+            return root;
+        }
+
+        public TypeMirror getRoot() {
+            return root;
+        }
+
+        public TypeMirror getEntityType() {
+            return entityType;
+        }
+
+        public PersistenceUnit getTargetRef() {
+            return supplier.get();
+        }
+    }
 
     final class EntityType implements PropertyType {
 

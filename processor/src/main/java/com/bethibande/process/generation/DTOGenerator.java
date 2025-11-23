@@ -9,8 +9,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.StringJoiner;
 
 public class DTOGenerator {
 
@@ -41,6 +41,19 @@ public class DTOGenerator {
             }
         }
 
+        if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
+            if (!ctx.shouldExpand(property)) {
+                final TypeName baseType = TypeName.get(collectionType.getTargetRef()
+                        .idProperty()
+                        .type()
+                        .getType());
+
+                return ParameterizedTypeName.get(ClassName.get(Collection.class), baseType);
+            } else {
+                return ParameterizedTypeName.get(ClassName.get(Collection.class), ctx.branch(property).getClassName());
+            }
+        }
+
         return TypeName.get(property.type().getType());
     }
 
@@ -63,6 +76,13 @@ public class DTOGenerator {
                         .copyWithParent(property);
             }
         }
+        if (property.type() instanceof PropertyType.EntityCollectionType entityCollectionType) {
+            if (!ctx.shouldExpand(property)) {
+                return entityCollectionType.getTargetRef()
+                        .idProperty()
+                        .copyWithParent(property);
+            }
+        }
         return property;
     }
 
@@ -80,6 +100,21 @@ public class DTOGenerator {
             final CodeBlock read = ctx.read(actualProperty);
             if (property.type() instanceof PropertyType.EntityType && ctx.shouldExpand(property)) {
                 code.add("$T.from($L.$L)", ctx.branch(property).getClassName(), METHOD_FROM_PARAMETER, read);
+            } else if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
+                if (ctx.shouldExpand(property)) {
+                    final GenerationContext branch = ctx.branch(property);
+                    code.add("$L.$L.stream().map($T::from).toList()", METHOD_FROM_PARAMETER, read, branch.getClassName());
+                } else {
+                    final CodeBlock accessor = ctx.read(property);
+                    final CodeBlock.Builder mapper = CodeBlock.builder();
+                    if (actualProperty.accessor() instanceof Accessor.MethodAccessor methodAccessor) {
+                        mapper.add("$T::$L", collectionType.getEntityType(), methodAccessor.read());
+                    } else {
+                        mapper.add("e -> e.$L", actualProperty.accessor().read());
+                    }
+
+                    code.add("$L.$L.stream().map($L).toList()", METHOD_FROM_PARAMETER, accessor, mapper.build());
+                }
             } else {
                 code.add("$L.$L", METHOD_FROM_PARAMETER, read);
             }

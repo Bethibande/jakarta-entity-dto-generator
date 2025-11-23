@@ -47,7 +47,7 @@ public class GenerationContext {
             blocks.addFirst(current.accessor().read());
             current = current.parent();
             if (current != null
-                    && current.type() instanceof PropertyType.EntityType
+                    && (current.type() instanceof PropertyType.EntityType || current.type() instanceof PropertyType.EntityCollectionType)
                     && shouldExpand(current)) {
                 break;
             }
@@ -60,12 +60,19 @@ public class GenerationContext {
         return branches.values();
     }
 
+    public PersistenceUnit extractEntityType(final Property property) {
+        if (property.type() instanceof PropertyType.EntityType entityType) return entityType.getTargetRef();
+        if (property.type() instanceof PropertyType.EntityCollectionType collectionType) return collectionType.getTargetRef();
+        return null;
+    }
+
     public GenerationContext branch(final Property property) {
         if (branches.containsKey(property)) return branches.get(property);
-        if (!(property.type() instanceof PropertyType.EntityType entityType)) return null;
 
-        final PersistenceUnit branchedProperty = entityType.getTargetRef()
-                .copyAsMemberOf(property);
+        final PersistenceUnit target = extractEntityType(property);
+        if (target == null) return null;
+
+        final PersistenceUnit branchedProperty = target.copyAsMemberOf(property);
 
         final GenerationContext branch = new GenerationContext(
                 this,

@@ -7,7 +7,7 @@ import jakarta.persistence.OneToMany;
 import java.util.List;
 
 @Entity
-@EntityDTO
+@EntityDTO(expandProperties = "entities")
 public class OneToManyEntity extends EntityBase {
 
     @OneToMany(mappedBy = "entity")
