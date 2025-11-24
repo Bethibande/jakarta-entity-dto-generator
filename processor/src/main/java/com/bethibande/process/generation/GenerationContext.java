@@ -1,6 +1,7 @@
 package com.bethibande.process.generation;
 
 import com.bethibande.process.StringUtil;
+import com.bethibande.process.model.Accessor;
 import com.bethibande.process.model.PersistenceUnit;
 import com.bethibande.process.model.Property;
 import com.bethibande.process.model.PropertyType;
@@ -42,7 +43,7 @@ public class GenerationContext {
                 : generateName();
     }
 
-    public CodeBlock optionalRead(final Property property, final String thisLiteral) {
+    public SequencedCollection<CodeBlock> read(final Property property) {
         final Deque<CodeBlock> blocks = new ArrayDeque<>();
         Property current = property;
 
@@ -56,8 +57,20 @@ public class GenerationContext {
             }
         }
 
+        return blocks;
+    }
+
+    public CodeBlock optionalRead(final Property property,
+                                  final String thisLiteral,
+                                  final boolean requireOptional) {
+        final SequencedCollection<CodeBlock> blocks = read(property);
+
+        if (blocks.size() == 1 && !requireOptional) {
+            return CodeBlock.of("$L.$L", thisLiteral, blocks.removeFirst());
+        }
+
         final CodeBlock.Builder builder = CodeBlock.builder();
-        builder.add("$T.ofNullable($L.$L)", Optional.class, thisLiteral, blocks.pop());
+        builder.add("$T.ofNullable($L.$L)", Optional.class, thisLiteral, blocks.removeFirst());
         if (!blocks.isEmpty()) {
             for (final CodeBlock block : blocks) {
                 builder.add(".map(o -> o.$L)", block);

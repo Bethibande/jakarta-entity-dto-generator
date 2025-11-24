@@ -1,6 +1,5 @@
 package com.bethibande.process.generation;
 
-import com.bethibande.process.model.Accessor;
 import com.bethibande.process.model.Property;
 import com.bethibande.process.model.PropertyType;
 import com.palantir.javapoet.*;
@@ -8,9 +7,7 @@ import com.palantir.javapoet.*;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class DTOGenerator {
 
@@ -86,6 +83,41 @@ public class DTOGenerator {
         return property;
     }
 
+    protected CodeBlock directAccess(final Property property, final boolean terminal, final GenerationContext ctx) {
+        final SequencedCollection<CodeBlock> accessors = ctx.read(property);
+        if (accessors.size() == 1 && terminal) {
+            return CodeBlock.of("$L.$L", METHOD_FROM_PARAMETER, accessors.getFirst());
+        }
+
+        final CodeBlock.Builder builder = CodeBlock.builder();
+        builder.add("$T.ofNullable($L.$L)", Optional.class, METHOD_FROM_PARAMETER, accessors.removeFirst());
+        for (final CodeBlock accessor : accessors) {
+            builder.add(".map(o -> o.$L)", accessor);
+        }
+        if (terminal) builder.add(".orElse(null)");
+        return builder.build();
+    }
+
+    protected CodeBlock dtoMappingAccess(final Property property, final GenerationContext ctx) {
+        final CodeBlock accessor = directAccess(property, true, ctx);
+        return CodeBlock.of("$T.from($L)", ctx.branch(property).getClassName(), accessor);
+    }
+
+    protected CodeBlock collectionAccess(final Property property, final Property actualProperty, final GenerationContext ctx) {
+        final CodeBlock.Builder mapper = CodeBlock.builder();
+        final CodeBlock.Builder accessor = CodeBlock.builder();
+        final boolean shouldExpand = ctx.shouldExpand(property);
+        if (shouldExpand) {
+            mapper.add("$T::from", ctx.branch(actualProperty).getClassName());
+            accessor.add(directAccess(actualProperty, false, ctx));
+        } else {
+            mapper.add("v -> v != null ? v.$L : null", actualProperty.accessor().read());
+            accessor.add(directAccess(property, false, ctx));
+        }
+
+        return CodeBlock.of("$L.map(o -> o.stream().map($L).toList()).orElse(null)", accessor.build(), mapper.build());
+    }
+
     protected MethodSpec createFromMethod(final GenerationContext ctx) {
         final CodeBlock.Builder code = CodeBlock.builder();
         code.addStatement("if ($L == null) return null", METHOD_FROM_PARAMETER);
@@ -97,28 +129,11 @@ public class DTOGenerator {
             final Property property = properties.get(i);
             final Property actualProperty = getActualTargetProperty(property, ctx);
 
-            // TODO: Refactor this mess
-            final CodeBlock read = ctx.optionalRead(actualProperty, METHOD_FROM_PARAMETER);
-            if (property.type() instanceof PropertyType.EntityType && ctx.shouldExpand(property)) {
-                code.add("$T.from($L.orElse(null))", ctx.branch(property).getClassName(), read);
-            } else if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
-                if (ctx.shouldExpand(property)) {
-                    final GenerationContext branch = ctx.branch(property);
-                    code.add("$L.map(o -> o.stream().map($T::from).toList()).orElse(null)", read, branch.getClassName());
-                } else {
-                    final CodeBlock accessor = ctx.optionalRead(property, METHOD_FROM_PARAMETER);
-                    final CodeBlock.Builder mapper = CodeBlock.builder();
-                    if (actualProperty.accessor() instanceof Accessor.MethodAccessor methodAccessor) {
-                        mapper.add("$T::$L", collectionType.getEntityType(), methodAccessor.read());
-                    } else {
-                        mapper.add("e -> e != null ? e.$L : null", actualProperty.accessor().read());
-                    }
-
-                    code.add("$L.map(o -> o.stream().map($L).toList()).orElse(null)", accessor, mapper.build());
-                }
-            } else {
-                code.add("$L.orElse(null)", read);
-            }
+            code.add(switch (property.type()) {
+                case PropertyType.EntityType _ when ctx.shouldExpand(property) -> dtoMappingAccess(actualProperty, ctx);
+                case PropertyType.EntityCollectionType _ -> collectionAccess(property, actualProperty, ctx);
+                default -> directAccess(actualProperty, true, ctx);
+            });
 
             if (i < properties.size() - 1) {
                 code.add(",\n");
