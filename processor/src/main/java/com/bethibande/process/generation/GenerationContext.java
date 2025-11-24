@@ -1,7 +1,6 @@
 package com.bethibande.process.generation;
 
 import com.bethibande.process.StringUtil;
-import com.bethibande.process.model.Accessor;
 import com.bethibande.process.model.PersistenceUnit;
 import com.bethibande.process.model.Property;
 import com.bethibande.process.model.PropertyType;
@@ -60,33 +59,15 @@ public class GenerationContext {
         return blocks;
     }
 
-    public CodeBlock optionalRead(final Property property,
-                                  final String thisLiteral,
-                                  final boolean requireOptional) {
-        final SequencedCollection<CodeBlock> blocks = read(property);
-
-        if (blocks.size() == 1 && !requireOptional) {
-            return CodeBlock.of("$L.$L", thisLiteral, blocks.removeFirst());
-        }
-
-        final CodeBlock.Builder builder = CodeBlock.builder();
-        builder.add("$T.ofNullable($L.$L)", Optional.class, thisLiteral, blocks.removeFirst());
-        if (!blocks.isEmpty()) {
-            for (final CodeBlock block : blocks) {
-                builder.add(".map(o -> o.$L)", block);
-            }
-        }
-
-        return builder.build();
-    }
-
     public Collection<GenerationContext> getBranches() {
         return branches.values();
     }
 
     public PersistenceUnit extractEntityType(final Property property) {
         if (property.type() instanceof PropertyType.EntityType entityType) return entityType.getTargetRef();
-        if (property.type() instanceof PropertyType.EntityCollectionType collectionType) return collectionType.getTargetRef();
+        if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
+            return collectionType.getTargetRef();
+        }
         return null;
     }
 
