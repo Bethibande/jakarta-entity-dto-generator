@@ -1,5 +1,6 @@
 package com.bethibande.process;
 
+import com.bethibande.process.annotation.VirtualDTOField;
 import com.palantir.javapoet.TypeName;
 import com.bethibande.process.model.Accessor;
 import com.bethibande.process.model.PersistenceUnit;
@@ -145,7 +146,7 @@ public class EntityAnalyzer {
         }
 
         return !element.getModifiers().contains(Modifier.STATIC)
-                && element.getAnnotation(Transient.class) == null;
+                && (element.getAnnotation(Transient.class) == null || element.getAnnotation(VirtualDTOField.class) != null);
     }
 
     protected AccessType getAccessorType(final TypeElement element) {
