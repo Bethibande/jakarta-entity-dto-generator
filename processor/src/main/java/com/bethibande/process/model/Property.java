@@ -8,6 +8,7 @@ public record Property(
         String name,
         Accessor accessor,
         PropertyType type,
+        boolean optional,
         Property parent
 ) {
 
@@ -16,6 +17,7 @@ public record Property(
                 name,
                 accessor,
                 type,
+                optional,
                 this.parent == null ? parent : this.parent.copyWithParent(parent)
         );
     }

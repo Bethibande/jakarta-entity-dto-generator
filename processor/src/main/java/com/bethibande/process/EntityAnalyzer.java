@@ -8,6 +8,7 @@ import com.bethibande.process.model.PropertyType;
 import jakarta.persistence.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.AnnotatedConstruct;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -82,6 +83,17 @@ public class EntityAnalyzer {
         return environment.getElementUtils().getTypeElement(TypeName.get(type).withoutAnnotations().toString());
     }
 
+    protected boolean isOptional(final AnnotatedConstruct construct, final TypeMirror type) {
+        if (type.getKind().isPrimitive()) return false;
+
+        if (construct.getAnnotation(Basic.class) != null) return construct.getAnnotation(Basic.class).optional();
+        if (construct.getAnnotation(Column.class) != null) return construct.getAnnotation(Column.class).nullable();
+        if (construct.getAnnotation(JoinColumn.class) != null) return construct.getAnnotation(JoinColumn.class).nullable();
+        if (construct.getAnnotation(OneToOne.class) != null) return construct.getAnnotation(OneToOne.class).optional();
+        if (construct.getAnnotation(ManyToOne.class) != null) return construct.getAnnotation(ManyToOne.class).optional();
+        return true;
+    }
+
     protected Property toProperty(final VariableElement element, final Property parent) {
         final String name = element.getSimpleName().toString();
         final Accessor accessor = new Accessor.FieldAccessor(element);
@@ -91,6 +103,7 @@ public class EntityAnalyzer {
                 name,
                 accessor,
                 type,
+                isOptional(element, element.asType()),
                 parent
         );
     }
@@ -173,6 +186,7 @@ public class EntityAnalyzer {
                 name,
                 accessor,
                 type,
+                isOptional(getter, getter.getReturnType()),
                 parent
         );
     }

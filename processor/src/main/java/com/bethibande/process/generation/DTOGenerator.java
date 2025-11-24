@@ -13,10 +13,16 @@ public class DTOGenerator {
 
     public static final String METHOD_FROM_PARAMETER = "entity";
 
+    public static final ClassName BEAN_VALIDATION_NOT_NULL = ClassName.get("jakarta.validation.constraints", "NotNull");
+
     private ProcessingEnvironment environment;
 
     public DTOGenerator(final ProcessingEnvironment environment) {
         this.environment = environment;
+    }
+
+    protected boolean hasJakartaValidationSupport() {
+        return environment.getElementUtils().getTypeElement(BEAN_VALIDATION_NOT_NULL.toString()) != null;
     }
 
     protected String toDTOPropertyName(final Property property, final GenerationContext ctx) {
@@ -27,31 +33,48 @@ public class DTOGenerator {
     }
 
     protected TypeName toDTOPropertyType(final Property property, final GenerationContext ctx) {
+        final List<AnnotationSpec> annotations = new ArrayList<>(0);
+        final boolean hasJakartaValidationSupport = hasJakartaValidationSupport();
+        if (!property.optional() && hasJakartaValidationSupport) {
+            annotations.add(AnnotationSpec.builder(BEAN_VALIDATION_NOT_NULL).build());
+        }
+
         if (property.type() instanceof PropertyType.EntityType entityType) {
             if (!ctx.shouldExpand(property)) {
                 return TypeName.get(entityType.getTargetRef()
-                        .idProperty()
-                        .type()
-                        .getType());
+                                .idProperty()
+                                .type()
+                                .getType())
+                        .annotated(annotations);
             } else {
-                return ctx.branch(property).getClassName();
+                return ctx.branch(property).getClassName().annotated(annotations);
             }
         }
 
         if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
+            final List<AnnotationSpec> baseTypeAnnotations = hasJakartaValidationSupport
+                    ? List.of(AnnotationSpec.builder(BEAN_VALIDATION_NOT_NULL).build())
+                    : Collections.emptyList();
+
             if (!ctx.shouldExpand(property)) {
                 final TypeName baseType = TypeName.get(collectionType.getTargetRef()
-                        .idProperty()
-                        .type()
-                        .getType());
+                                .idProperty()
+                                .type()
+                                .getType())
+                        .annotated(baseTypeAnnotations);
 
-                return ParameterizedTypeName.get(ClassName.get(Collection.class), baseType);
+                return ParameterizedTypeName.get(ClassName.get(Collection.class), baseType)
+                        .annotated(annotations);
             } else {
-                return ParameterizedTypeName.get(ClassName.get(Collection.class), ctx.branch(property).getClassName());
+                return ParameterizedTypeName.get(
+                                ClassName.get(Collection.class),
+                                ctx.branch(property).getClassName().annotated(baseTypeAnnotations)
+                        )
+                        .annotated(annotations);
             }
         }
 
-        return TypeName.get(property.type().getType());
+        return TypeName.get(property.type().getType()).annotated(annotations);
     }
 
     protected MethodSpec createConstructor(final GenerationContext ctx) {
