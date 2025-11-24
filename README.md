@@ -1,6 +1,12 @@
 # Jakarta entity dto generator
 This is a simple annotation processor meant to generate DTO classes from JPA entity definitions.
 
+Features
+- Generate multiple DTO classes from a single Entity
+- Easily convert entities to DTOs
+- Generate virtual fields, see [here](example/src/main/java/com/bethibande/process/example/OneToManyEntity.java) for example
+- Generates NotNull annotations for fields if jakarta validation is used
+
 ### Usage
 
 > [!NOTE]
@@ -16,8 +22,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.bethibande.process:annotations:1.1")
-    annotationProcessor("com.bethibande.process:processor:1.1")
+    implementation("com.bethibande.process:annotations:1.3")
+    annotationProcessor("com.bethibande.process:processor:1.3")
 }
 ```
 
