@@ -1,5 +1,5 @@
 # Jakarta entity dto generator
-This is a simple annotation processor meant to generate DTO classes from JPA entity definitions.
+This is a tool that generates DTO classes from your JPA entity classes
 
 Features
 - Generate multiple DTO classes from a single Entity
