@@ -6,7 +6,9 @@ import com.palantir.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
+import javax.tools.JavaFileObject;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.*;
 
 public class DTOGenerator {
@@ -14,6 +16,7 @@ public class DTOGenerator {
     public static final String METHOD_FROM_PARAMETER = "entity";
 
     public static final ClassName BEAN_VALIDATION_NOT_NULL = ClassName.get("jakarta.validation.constraints", "NotNull");
+    public static AnnotationSpec NOT_NULL_ANNOTATION = AnnotationSpec.builder(BEAN_VALIDATION_NOT_NULL).build();
 
     private ProcessingEnvironment environment;
 
@@ -36,7 +39,7 @@ public class DTOGenerator {
         final List<AnnotationSpec> annotations = new ArrayList<>(0);
         final boolean hasJakartaValidationSupport = hasJakartaValidationSupport();
         if (!property.optional() && hasJakartaValidationSupport) {
-            annotations.add(AnnotationSpec.builder(BEAN_VALIDATION_NOT_NULL).build());
+            annotations.add(NOT_NULL_ANNOTATION);
         }
 
         if (property.type() instanceof PropertyType.EntityType entityType) {
@@ -53,7 +56,7 @@ public class DTOGenerator {
 
         if (property.type() instanceof PropertyType.EntityCollectionType collectionType) {
             final List<AnnotationSpec> baseTypeAnnotations = hasJakartaValidationSupport
-                    ? List.of(AnnotationSpec.builder(BEAN_VALIDATION_NOT_NULL).build())
+                    ? List.of(NOT_NULL_ANNOTATION)
                     : Collections.emptyList();
 
             if (!ctx.shouldExpand(property)) {
@@ -196,7 +199,13 @@ public class DTOGenerator {
         final JavaFile file = JavaFile.builder(ctx.getClassName().packageName(), spec)
                 .indent("    ")
                 .build();
-        file.writeTo(environment.getFiler());
+
+        final JavaFileObject sourceFile = environment.getFiler()
+                .createSourceFile(ctx.getClassName().toString(), ctx.getUnit().element());
+
+        try (final Writer writer = sourceFile.openWriter()) {
+            file.writeTo(writer);
+        }
     }
 
 }
