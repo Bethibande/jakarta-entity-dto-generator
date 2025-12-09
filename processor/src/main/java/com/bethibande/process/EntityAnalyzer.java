@@ -146,7 +146,7 @@ public class EntityAnalyzer {
         }
 
         return !element.getModifiers().contains(Modifier.STATIC)
-                && (element.getAnnotation(Transient.class) == null || element.getAnnotation(VirtualDTOField.class) != null);
+                && element.getAnnotation(Transient.class) == null;
     }
 
     protected AccessType getAccessorType(final TypeElement element) {
@@ -217,6 +217,19 @@ public class EntityAnalyzer {
                 .toList());
     }
 
+    protected List<Property> collectVirtualFieldProperties(final TypeElement element, final Property parent) {
+        final List<ExecutableElement> elements = element.getEnclosedElements()
+                .stream()
+                .filter(el -> el instanceof ExecutableElement)
+                .map(el -> (ExecutableElement) el)
+                .filter(el -> !el.getModifiers().contains(Modifier.STATIC))
+                .filter(el -> el.getAnnotation(VirtualDTOField.class) != null)
+                .filter(el -> isGetter(el) || isSetter(el))
+                .toList();
+
+        return toProperties(elements, parent);
+    }
+
     protected List<Property> collectProperties(final TypeElement element, final Property parent) {
         final AccessType accessType = getAccessorType(element);
         final List<? extends Element> elements = element.getEnclosedElements()
@@ -225,6 +238,7 @@ public class EntityAnalyzer {
                 .toList();
 
         final List<Property> properties = new ArrayList<>();
+        properties.addAll(collectVirtualFieldProperties(element, parent));
 
         if (accessType == AccessType.FIELD) {
             properties.addAll(elements.stream()

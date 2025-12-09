@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.bethibande.process"
-version = "1.4"
+version = "1.5"
 
 description = "DTO generator for JPA entities"
 
