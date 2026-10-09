@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.bethibande.process"
-version = "1.5"
+version = "1.6"
 
 description = "Annotations for DTO generation"
 
@@ -79,7 +79,7 @@ publishing {
     repositories {
         maven {
             name = "Maven-Releases"
-            url = uri("https://pckg.bethibande.com/repository/maven-releases/")
+            url = uri("https://repo.bethibande.com/repositories/maven/releases")
             credentials {
                 if (providers.gradleProperty("mavenUsername").isPresent) {
                     username = providers.gradleProperty("mavenUsername").get()

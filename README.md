@@ -18,14 +18,14 @@ Gradle
 ```kts
 repositories {
     maven {
-        url = uri("https://pckg.bethibande.com/repository/maven-releases/")
+        url = uri("https://repo.bethibande.com/repositories/maven/releases")
         name = "bethibande-releases"
     }
 }
 
 dependencies {
-    implementation("com.bethibande.process:annotations:1.5")
-    annotationProcessor("com.bethibande.process:processor:1.5")
+    implementation("com.bethibande.process:annotations:1.6")
+    annotationProcessor("com.bethibande.process:processor:1.6")
 }
 ```
 
