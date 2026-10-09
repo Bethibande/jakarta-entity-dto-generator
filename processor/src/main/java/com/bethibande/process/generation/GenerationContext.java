@@ -1,6 +1,7 @@
 package com.bethibande.process.generation;
 
 import com.bethibande.process.StringUtil;
+import com.bethibande.process.annotation.FilterType;
 import com.bethibande.process.model.PersistenceUnit;
 import com.bethibande.process.model.Property;
 import com.bethibande.process.model.PropertyType;
@@ -14,12 +15,13 @@ public class GenerationContext {
     private final GenerationContext parent;
 
     private final PersistenceUnit unit;
-    private final String[] excludeProperties;
+    private final FilterType filterType;
+    private final String[] filterProperties;
     private final String[] expandProperties;
 
     private final ClassName className;
 
-    private final Set<String> excludePropertiesLookup;
+    private final Set<String> filterPropertiesLookup;
     private final Set<String> expandPropertiesLookup;
 
     private final Map<Property, GenerationContext> branches = new HashMap<>(0);
@@ -27,15 +29,17 @@ public class GenerationContext {
     public GenerationContext(final GenerationContext parent,
                              final PersistenceUnit unit,
                              final String nameOverride,
-                             final String[] excludeProperties,
+                             final FilterType filterType,
+                             final String[] filterProperties,
                              final String[] expandProperties) {
         this.parent = parent;
         this.unit = unit;
-        this.excludeProperties = excludeProperties;
-        this.expandProperties = expandProperties;
+        this.filterType = filterType != null ? filterType : FilterType.EXCLUDE;
+        this.filterProperties = filterProperties != null ? filterProperties : new String[0];
+        this.expandProperties = expandProperties != null ? expandProperties : new String[0];
 
-        this.excludePropertiesLookup = Set.of(excludeProperties);
-        this.expandPropertiesLookup = Set.of(expandProperties);
+        this.filterPropertiesLookup = Set.of(this.filterProperties);
+        this.expandPropertiesLookup = Set.of(this.expandProperties);
 
         this.className = nameOverride != null
                 ? ClassName.get(unit.getPackageName(), nameOverride)
@@ -83,7 +87,8 @@ public class GenerationContext {
                 this,
                 branchedProperty,
                 null,
-                excludeProperties,
+                filterType,
+                filterProperties,
                 expandProperties
         );
 
@@ -104,10 +109,30 @@ public class GenerationContext {
         return expandPropertiesLookup.contains(property.getPathFromRootString());
     }
 
+    public boolean isPropertyIncluded(final Property prop) {
+        final String path = prop.getPathFromRootString();
+
+        if (filterType == FilterType.EXCLUDE) {
+            final boolean isExcluded = filterPropertiesLookup.contains(path)
+                    || filterPropertiesLookup.stream().anyMatch(filterPath -> path.startsWith(filterPath + "."));
+            return !isExcluded;
+        }
+
+        if (filterType == FilterType.INCLUDE) {
+            if (filterPropertiesLookup.isEmpty()) return false;
+            return filterPropertiesLookup.contains(path)
+                    || (prop.type() instanceof PropertyType.EntityType && !shouldExpand(prop) && filterPropertiesLookup.contains(path + "Id"))
+                    || filterPropertiesLookup.stream().anyMatch(filterPath -> path.startsWith(filterPath + "."))
+                    || filterPropertiesLookup.stream().anyMatch(filterPath -> filterPath.startsWith(path + "."));
+        }
+
+        return true;
+    }
+
     public List<Property> getProperties() {
         return unit.properties()
                 .stream()
-                .filter(prop -> !excludePropertiesLookup.contains(prop.getPathFromRootString()))
+                .filter(this::isPropertyIncluded)
                 .toList();
     }
 
@@ -115,22 +140,73 @@ public class GenerationContext {
         return unit;
     }
 
+    public FilterType getFilterType() {
+        return filterType;
+    }
+
+    public String[] getFilterProperties() {
+        return filterProperties;
+    }
+
+    public String[] getExcludeProperties() {
+        return filterType == FilterType.EXCLUDE ? filterProperties : new String[0];
+    }
+
+    public String[] getIncludeProperties() {
+        return filterType == FilterType.INCLUDE ? filterProperties : new String[0];
+    }
+
+    public String[] getExpandProperties() {
+        return expandProperties;
+    }
+
+    private String formatPropName(final String prop) {
+        final StringBuilder sb = new StringBuilder();
+        for (final String part : prop.split("\\.")) {
+            sb.append(StringUtil.firstCharacterUpperCase(part));
+        }
+        return sb.toString();
+    }
+
     private ClassName generateName() {
         final StringBuilder builder = new StringBuilder();
         builder.append(unit.getSimpleName());
         builder.append("DTO");
 
-        if (excludeProperties != null && excludeProperties.length > 0) {
-            builder.append("Without");
-            for (int i = 0; i < excludeProperties.length; i++) {
-                final String prop = excludeProperties[i];
-                if (prop.contains(".")) continue;
+        if (filterProperties != null && filterProperties.length > 0) {
+            final String prefix = filterType == FilterType.INCLUDE ? "With" : "Without";
+            final List<String> matchingProps = new ArrayList<>();
 
-                if (i > 0) {
-                    builder.append("And");
+            for (final String prop : filterProperties) {
+                if (filterType == FilterType.EXCLUDE) {
+                    if (prop.contains(".")) continue;
+                    matchingProps.add(StringUtil.firstCharacterUpperCase(prop));
+                } else {
+                    if (parent != null) {
+                        final String branchPrefix = unit.properties().isEmpty()
+                                ? ""
+                                : unit.properties().getFirst().getPathFromRoot().stream().findFirst().orElse("");
+                        String relativeProp = prop;
+                        if (!branchPrefix.isEmpty() && prop.startsWith(branchPrefix + ".")) {
+                            relativeProp = prop.substring(branchPrefix.length() + 1);
+                            matchingProps.add(formatPropName(relativeProp));
+                        } else if (!prop.contains(".")) {
+                            matchingProps.add(formatPropName(relativeProp));
+                        }
+                    } else {
+                        matchingProps.add(formatPropName(prop));
+                    }
                 }
+            }
 
-                builder.append(StringUtil.firstCharacterUpperCase(prop));
+            if (!matchingProps.isEmpty()) {
+                builder.append(prefix);
+                for (int i = 0; i < matchingProps.size(); i++) {
+                    if (i > 0) {
+                        builder.append("And");
+                    }
+                    builder.append(matchingProps.get(i));
+                }
             }
         }
 

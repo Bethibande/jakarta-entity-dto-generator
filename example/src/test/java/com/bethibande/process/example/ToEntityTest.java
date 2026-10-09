@@ -412,4 +412,40 @@ public class ToEntityTest {
         assertEquals(id, result.id);
         assertEquals("updated", result.name);
     }
+
+    @Test
+    void testExampleEntityDTOWithIdAndSomeString() {
+        final ExampleEntity entity = new ExampleEntity();
+        entity.id = 55L;
+        entity.someString = "includedString";
+        entity.list = List.of("x", "y");
+
+        final ExampleEntityDTOWithIdAndSomeString dto = ExampleEntityDTOWithIdAndSomeString.from(entity);
+        assertNotNull(dto);
+        assertEquals(55L, dto.id());
+        assertEquals("includedString", dto.someString());
+
+        final ExampleEntity existing = new ExampleEntity();
+        final ExampleEntity converted = dto.toEntity(existing);
+        assertSame(existing, converted);
+        assertEquals(55L, converted.id);
+        assertEquals("includedString", converted.someString);
+    }
+
+    @Test
+    void testOneToManyEntityDTOWithIdAndEntityCount() {
+        final OneToManyEntity entity = new OneToManyEntity();
+        entity.id = 789L;
+        entity.setEntities(List.of(new ManyToOneEntity(), new ManyToOneEntity()));
+
+        final OneToManyEntityDTOWithIdAndEntityCount dto = OneToManyEntityDTOWithIdAndEntityCount.from(entity);
+        assertNotNull(dto);
+        assertEquals(789L, dto.id());
+        assertEquals(2, dto.entityCount());
+
+        final OneToManyEntity existing = new OneToManyEntity();
+        final OneToManyEntity converted = dto.toEntity(existing);
+        assertSame(existing, converted);
+        assertEquals(789L, converted.id);
+    }
 }

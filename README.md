@@ -5,6 +5,7 @@ Features
 - Generate multiple DTO classes from a single Entity
 - Easily convert entities to DTOs
 - Convert DTOs back into new or existing entities
+- Whitelist and blacklist field filtering using `@PropertyFilter` or `includeProperties`/`excludeProperties`
 - Generate virtual fields, see [here](example/src/main/java/com/bethibande/process/example/OneToManyEntity.java) for example
 - Generates NotNull annotations for fields if jakarta validation is used
 

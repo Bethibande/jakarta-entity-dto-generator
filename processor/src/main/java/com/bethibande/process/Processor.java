@@ -1,6 +1,8 @@
 package com.bethibande.process;
 
 import com.bethibande.process.annotation.EntityDTO;
+import com.bethibande.process.annotation.FilterType;
+import com.bethibande.process.annotation.PropertyFilter;
 import com.bethibande.process.generation.DTOGenerator;
 import com.bethibande.process.generation.GenerationContext;
 import com.bethibande.process.model.PersistenceUnit;
@@ -55,11 +57,29 @@ public class Processor extends AbstractProcessor {
                             ? request.name()
                             : null;
 
+                    final FilterType filterType;
+                    final String[] filterProperties;
+
+                    final PropertyFilter filter = request.filter();
+                    final boolean hasFilterProps = filter.properties().length > 0;
+
+                    if (hasFilterProps) {
+                        filterType = filter.type();
+                        filterProperties = filter.properties();
+                    } else if (request.excludeProperties().length > 0) {
+                        filterType = FilterType.EXCLUDE;
+                        filterProperties = request.excludeProperties();
+                    } else {
+                        filterType = FilterType.EXCLUDE;
+                        filterProperties = new String[0];
+                    }
+
                     generator.generate(new GenerationContext(
                             null,
                             persistenceUnit,
                             name,
-                            request.excludeProperties(),
+                            filterType,
+                            filterProperties,
                             request.expandProperties()
                     ));
                 } catch (IOException e) {
