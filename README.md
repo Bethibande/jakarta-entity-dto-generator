@@ -4,6 +4,7 @@ This is a tool that generates DTO classes from your JPA entity classes
 Features
 - Generate multiple DTO classes from a single Entity
 - Easily convert entities to DTOs
+- Convert DTOs back into new or existing entities
 - Generate virtual fields, see [here](example/src/main/java/com/bethibande/process/example/OneToManyEntity.java) for example
 - Generates NotNull annotations for fields if jakarta validation is used
 
@@ -56,6 +57,20 @@ You can easily convert your entities into a DTO
 public ExampleEntityDTO findById(final @PathParam("id") long id) {
     final ExampleEntity entity = repository.findById(id);
     return ExampleEntityDTO.from(entity); // This is null-safe
+}
+```
+And the other way around
+```java
+@POST
+@Path("/api/v1/example-entity")
+public void findById(final ExampleEntityDTO dto) {
+    // 1. Loads the ExampleEntity by id
+    // 2. Applies all fields
+    // 2.1. Fetches ReferencedEntity by id
+    // 2.1. Applies resulting entity to ExampleEntity
+    // 3. Returns entity
+    final ExampleEntity entity = dto.toEntity(/*existingEntityInstance, */this.entityManager);
+    this.entityManager.persist(entity); // Persist updated entity
 }
 ```
 The serialized output of this DTO might look like this:
