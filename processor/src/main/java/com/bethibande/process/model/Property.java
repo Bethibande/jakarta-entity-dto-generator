@@ -1,7 +1,9 @@
 package com.bethibande.process.model;
 
+import javax.lang.model.element.AnnotationMirror;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.SequencedCollection;
 
 public record Property(
@@ -9,8 +11,19 @@ public record Property(
         Accessor accessor,
         PropertyType type,
         boolean optional,
-        Property parent
+        Property parent,
+        List<AnnotationMirror> validationAnnotations
 ) {
+
+    public Property(
+            String name,
+            Accessor accessor,
+            PropertyType type,
+            boolean optional,
+            Property parent
+    ) {
+        this(name, accessor, type, optional, parent, List.of());
+    }
 
     public Property copyWithParent(final Property parent) {
         return new Property(
@@ -18,7 +31,8 @@ public record Property(
                 accessor,
                 type,
                 optional,
-                this.parent == null ? parent : this.parent.copyWithParent(parent)
+                this.parent == null ? parent : this.parent.copyWithParent(parent),
+                validationAnnotations
         );
     }
 

@@ -12,6 +12,7 @@ repositories {
 dependencies {
     implementation("jakarta.persistence:jakarta.persistence-api:3.2.0")
     implementation("jakarta.validation:jakarta.validation-api:3.1.1")
+    implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
 
     implementation(projects.annotations)
     annotationProcessor(projects.processor)

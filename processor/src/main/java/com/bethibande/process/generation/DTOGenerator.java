@@ -7,7 +7,11 @@ import com.bethibande.process.model.PropertyType;
 import com.palantir.javapoet.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
@@ -33,6 +37,69 @@ public class DTOGenerator {
 
     protected boolean hasJakartaValidationSupport() {
         return environment.getElementUtils().getTypeElement(BEAN_VALIDATION_NOT_NULL.toString()) != null;
+    }
+
+    protected AnnotationSpec toAnnotationSpec(final AnnotationMirror annotationMirror) {
+        final String typeString = annotationMirror.getAnnotationType().toString();
+        final ClassName annotationType = ClassName.bestGuess(typeString);
+
+        final AnnotationSpec.Builder builder = AnnotationSpec.builder(annotationType);
+
+        for (final Map.Entry<? extends javax.lang.model.element.ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues().entrySet()) {
+            final String name = entry.getKey().getSimpleName().toString();
+            final AnnotationValue value = entry.getValue();
+            builder.addMember(name, toCodeBlock(value));
+        }
+
+        return builder.build();
+    }
+
+    protected CodeBlock toCodeBlock(final AnnotationValue annotationValue) {
+        final Object value = annotationValue.getValue();
+
+        if (value instanceof javax.lang.model.type.TypeMirror typeMirror) {
+            return CodeBlock.of("$T", TypeName.get(typeMirror));
+        }
+
+        if (value instanceof javax.lang.model.element.Element element) {
+            if (element instanceof VariableElement varElement) {
+                final String enclosing = varElement.getEnclosingElement().toString();
+                return CodeBlock.of("$T.$L",
+                        ClassName.bestGuess(enclosing),
+                        varElement.getSimpleName());
+            }
+            return CodeBlock.of("$L", element);
+        }
+
+        if (value instanceof List<?> list) {
+            if (list.isEmpty()) {
+                return CodeBlock.of("{}");
+            }
+            final CodeBlock.Builder builder = CodeBlock.builder();
+            builder.add("{");
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) builder.add(", ");
+                builder.add(toCodeBlock((AnnotationValue) list.get(i)));
+            }
+            builder.add("}");
+            return builder.build();
+        }
+
+        if (value instanceof AnnotationMirror nestedAnnotation) {
+            return CodeBlock.of("$L", toAnnotationSpec(nestedAnnotation));
+        }
+
+        if (value instanceof Name name) {
+            return CodeBlock.of("$S", name.toString());
+        }
+
+        return CodeBlock.of("$L", value);
+    }
+
+    protected List<AnnotationSpec> toAnnotationSpecs(final List<AnnotationMirror> annotationMirrors) {
+        return annotationMirrors.stream()
+                .map(this::toAnnotationSpec)
+                .toList();
     }
 
     protected TypeMirror asType(final Class<?> clazz) {
@@ -88,9 +155,11 @@ public class DTOGenerator {
     }
 
     protected TypeName toDTOPropertyType(final Property property, final GenerationContext ctx) {
-        final List<AnnotationSpec> annotations = new ArrayList<>(0);
+        final List<AnnotationSpec> annotations = new ArrayList<>(new LinkedHashSet<>(toAnnotationSpecs(property.validationAnnotations())));
         final boolean hasJakartaValidationSupport = hasJakartaValidationSupport();
-        if (!property.optional() && hasJakartaValidationSupport) {
+
+        // Auto-add @NotNull for non-optional properties only if not already present
+        if (!property.optional() && hasJakartaValidationSupport && !annotations.contains(NOT_NULL_ANNOTATION)) {
             annotations.add(NOT_NULL_ANNOTATION);
         }
 

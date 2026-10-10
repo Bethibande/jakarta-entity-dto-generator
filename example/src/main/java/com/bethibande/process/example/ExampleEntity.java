@@ -7,6 +7,9 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.Email;
 
 import java.util.List;
 
@@ -16,7 +19,12 @@ import java.util.List;
 @EntityDTO(filter = @PropertyFilter(type = FilterType.INCLUDE, properties = {"id", "someString"}))
 public class ExampleEntity extends EntityBase {
 
+    @NotBlank
+    @Size(min = 1, max = 100)
     public String someString;
+
+    @Email
+    public String email;
 
     @Embedded
     public EmbeddableTimestamp timestamp;

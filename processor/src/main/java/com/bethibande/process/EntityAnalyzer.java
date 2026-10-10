@@ -24,6 +24,7 @@ import jakarta.persistence.Transient;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.AnnotatedConstruct;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -59,6 +60,12 @@ public class EntityAnalyzer {
             Column.class,
             JoinColumn.class,
             Embedded.class
+    );
+
+    private static final Set<String> VALIDATION_ANNOTATION_PACKAGES = Set.of(
+            "jakarta.validation.constraints",
+            "javax.validation.constraints",
+            "org.hibernate.validator.constraints"
     );
 
     protected final ProcessingEnvironment environment;
@@ -119,17 +126,33 @@ public class EntityAnalyzer {
         return true;
     }
 
+    protected List<AnnotationMirror> extractValidationAnnotations(final AnnotatedConstruct construct) {
+        final List<AnnotationMirror> result = new ArrayList<>();
+        for (final AnnotationMirror annotation : construct.getAnnotationMirrors()) {
+            final TypeElement annotationType = (TypeElement) annotation.getAnnotationType().asElement();
+            if (annotationType.getEnclosingElement() != null) {
+                final String packageName = annotationType.getEnclosingElement().toString();
+                if (VALIDATION_ANNOTATION_PACKAGES.contains(packageName)) {
+                    result.add(annotation);
+                }
+            }
+        }
+        return result;
+    }
+
     protected Property toProperty(final VariableElement element, final Property parent) {
         final String name = element.getSimpleName().toString();
         final Accessor accessor = new Accessor.FieldAccessor(element);
         final PropertyType type = toPropertyType(element.asType());
+        final List<AnnotationMirror> validationAnnotations = extractValidationAnnotations(element);
 
         return new Property(
                 name,
                 accessor,
                 type,
                 isOptional(element, element.asType()),
-                parent
+                parent,
+                validationAnnotations
         );
     }
 
@@ -207,12 +230,24 @@ public class EntityAnalyzer {
         final Accessor accessor = new Accessor.MethodAccessor(getter, setter);
         final PropertyType type = toPropertyType(getter.getReturnType());
 
+        // Collect validation annotations from getter, setter, and getter's return type parameter
+        final List<AnnotationMirror> validationAnnotations = new ArrayList<>();
+        validationAnnotations.addAll(extractValidationAnnotations(getter));
+        if (setter != null) {
+            validationAnnotations.addAll(extractValidationAnnotations(setter));
+        }
+        // Also check parameters of setter for validation annotations
+        if (setter != null && !setter.getParameters().isEmpty()) {
+            validationAnnotations.addAll(extractValidationAnnotations(setter.getParameters().getFirst()));
+        }
+
         return new Property(
                 name,
                 accessor,
                 type,
                 isOptional(getter, getter.getReturnType()),
-                parent
+                parent,
+                validationAnnotations
         );
     }
 
