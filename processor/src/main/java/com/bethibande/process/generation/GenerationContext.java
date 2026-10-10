@@ -112,6 +112,17 @@ public class GenerationContext {
     public boolean isPropertyIncluded(final Property prop) {
         final String path = prop.getPathFromRootString();
 
+        // If property is marked as ignored by default, it is only included when
+        // the filter type is INCLUDE and the property is explicitly listed.
+        if (prop.ignoredByDefault()) {
+            if (filterType == FilterType.INCLUDE) {
+                return filterPropertiesLookup.contains(path)
+                        || filterPropertiesLookup.stream().anyMatch(filterPath -> path.startsWith(filterPath + "."))
+                        || filterPropertiesLookup.stream().anyMatch(filterPath -> filterPath.startsWith(path + "."));
+            }
+            return false;
+        }
+
         if (filterType == FilterType.EXCLUDE) {
             final boolean isExcluded = filterPropertiesLookup.contains(path)
                     || filterPropertiesLookup.stream().anyMatch(filterPath -> path.startsWith(filterPath + "."));

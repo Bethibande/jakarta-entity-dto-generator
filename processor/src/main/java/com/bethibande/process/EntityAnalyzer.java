@@ -1,5 +1,6 @@
 package com.bethibande.process;
 
+import com.bethibande.process.annotation.IgnoreProperty;
 import com.bethibande.process.annotation.VirtualDTOField;
 import com.bethibande.process.model.Accessor;
 import com.bethibande.process.model.PersistenceUnit;
@@ -140,6 +141,10 @@ public class EntityAnalyzer {
         return result;
     }
 
+    protected boolean isIgnoredByDefault(final AnnotatedConstruct construct) {
+        return construct.getAnnotation(IgnoreProperty.class) != null;
+    }
+
     protected Property toProperty(final VariableElement element, final Property parent) {
         final String name = element.getSimpleName().toString();
         final Accessor accessor = new Accessor.FieldAccessor(element);
@@ -152,7 +157,8 @@ public class EntityAnalyzer {
                 type,
                 isOptional(element, element.asType()),
                 parent,
-                validationAnnotations
+                validationAnnotations,
+                isIgnoredByDefault(element)
         );
     }
 
@@ -241,13 +247,17 @@ public class EntityAnalyzer {
             validationAnnotations.addAll(extractValidationAnnotations(setter.getParameters().getFirst()));
         }
 
+        // Check for @IgnoreProperty on getter or setter
+        final boolean ignoredByDefault = isIgnoredByDefault(getter) || (setter != null && isIgnoredByDefault(setter));
+
         return new Property(
                 name,
                 accessor,
                 type,
                 isOptional(getter, getter.getReturnType()),
                 parent,
-                validationAnnotations
+                validationAnnotations,
+                ignoredByDefault
         );
     }
 

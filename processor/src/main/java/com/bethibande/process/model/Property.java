@@ -12,7 +12,8 @@ public record Property(
         PropertyType type,
         boolean optional,
         Property parent,
-        List<AnnotationMirror> validationAnnotations
+        List<AnnotationMirror> validationAnnotations,
+        boolean ignoredByDefault
 ) {
 
     public Property(
@@ -22,7 +23,18 @@ public record Property(
             boolean optional,
             Property parent
     ) {
-        this(name, accessor, type, optional, parent, List.of());
+        this(name, accessor, type, optional, parent, List.of(), false);
+    }
+
+    public Property(
+            String name,
+            Accessor accessor,
+            PropertyType type,
+            boolean optional,
+            Property parent,
+            List<AnnotationMirror> validationAnnotations
+    ) {
+        this(name, accessor, type, optional, parent, validationAnnotations, false);
     }
 
     public Property copyWithParent(final Property parent) {
@@ -32,7 +44,8 @@ public record Property(
                 type,
                 optional,
                 this.parent == null ? parent : this.parent.copyWithParent(parent),
-                validationAnnotations
+                validationAnnotations,
+                ignoredByDefault
         );
     }
 

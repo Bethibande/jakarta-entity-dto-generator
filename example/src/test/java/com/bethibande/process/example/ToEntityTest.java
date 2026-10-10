@@ -96,7 +96,6 @@ public class ToEntityTest {
                 new ExampleEntityDTOWithoutId.ReferencedEntityDTOWithoutId("testName");
         final ExampleEntityDTOWithoutId dto = new ExampleEntityDTOWithoutId(
                 "hello",
-                "test@example.com",
                 refDto,
                 List.of("a", "b"),
                 now,
@@ -129,7 +128,6 @@ public class ToEntityTest {
         final LocalDateTime now = LocalDateTime.now();
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "updatedString",
-                "test@example.com",
                 refDto,
                 List.of("x"),
                 now,
@@ -143,7 +141,6 @@ public class ToEntityTest {
         assertSame(existing, result);
         assertEquals(10L, result.id);
         assertEquals("updatedString", result.someString);
-        assertEquals("test@example.com", result.email);
         assertEquals(List.of("x"), result.list);
         assertNotNull(result.timestamp);
         assertEquals(now, result.timestamp.created);
@@ -164,7 +161,6 @@ public class ToEntityTest {
         final LocalDateTime now = LocalDateTime.now();
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "updatedString",
-                "test@example.com",
                 refDto,
                 List.of("x"),
                 now,
@@ -252,7 +248,6 @@ public class ToEntityTest {
         final LocalDateTime now = LocalDateTime.now();
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "str",
-                "test@example.com",
                 refDto,
                 List.of(),
                 now,
@@ -289,7 +284,6 @@ public class ToEntityTest {
         final LocalDateTime now = LocalDateTime.now();
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "str",
-                "test@example.com",
                 refDto,
                 List.of(),
                 now,
@@ -329,7 +323,6 @@ public class ToEntityTest {
         final ExampleEntityDTO.ReferencedEntityDTO refDto = new ExampleEntityDTO.ReferencedEntityDTO(refId, "updatedRefName");
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "rootString",
-                "test@example.com",
                 refDto,
                 List.of("val"),
                 now,
@@ -355,7 +348,6 @@ public class ToEntityTest {
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "rootString",
                 null,
-                null,
                 List.of(),
                 now,
                 now,
@@ -379,7 +371,6 @@ public class ToEntityTest {
         final LocalDateTime now = LocalDateTime.now();
         final ExampleEntityDTO dto = new ExampleEntityDTO(
                 "rootString",
-                null,
                 null,
                 List.of(),
                 now,

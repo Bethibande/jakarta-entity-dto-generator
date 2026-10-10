@@ -2,6 +2,7 @@ package com.bethibande.process.example;
 
 import com.bethibande.process.annotation.EntityDTO;
 import com.bethibande.process.annotation.FilterType;
+import com.bethibande.process.annotation.IgnoreProperty;
 import com.bethibande.process.annotation.PropertyFilter;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
@@ -17,6 +18,7 @@ import java.util.List;
 @EntityDTO(expandProperties = {"entity"})
 @EntityDTO(filter = @PropertyFilter(properties = {"id", "entity.id"}), expandProperties = {"entity"})
 @EntityDTO(filter = @PropertyFilter(type = FilterType.INCLUDE, properties = {"id", "someString"}))
+@EntityDTO(filter = @PropertyFilter(type = FilterType.INCLUDE, properties = {"id", "someString", "email"}))
 public class ExampleEntity extends EntityBase {
 
     @NotBlank
@@ -24,6 +26,7 @@ public class ExampleEntity extends EntityBase {
     public String someString;
 
     @Email
+    @IgnoreProperty
     public String email;
 
     @Embedded
