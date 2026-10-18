@@ -581,11 +581,29 @@ public class DTOGenerator {
             code.add("}\n");
         }
 
-        generateSetProperty(property, targetExpr, listVarName, code);
+        // Clear and refill the existing collection instead of replacing it, replacing breaks orphanRemoval in hibernate
+        final String currentVarName = property.name() + "Current";
+        code.addStatement("final $T<$T> $L = $L.$L", Collection.class, targetEntityTypeName, currentVarName, targetExpr, property.accessor().read());
+        code.add("if ($L != null) {\n", currentVarName);
+        code.indent();
+        code.addStatement("$L.clear()", currentVarName);
+        code.addStatement("$L.addAll($L)", currentVarName, listVarName);
         code.unindent();
         code.add("} else {\n");
         code.indent();
-        generateSetProperty(property, targetExpr, "null", code);
+        generateSetProperty(property, targetExpr, listVarName, code);
+        code.unindent();
+        code.add("}\n");
+        code.unindent();
+        code.add("} else {\n");
+        code.indent();
+        final String currentNullVarName = property.name() + "Current";
+        code.addStatement("final $T<$T> $L = $L.$L", Collection.class, targetEntityTypeName, currentNullVarName, targetExpr, property.accessor().read());
+        code.add("if ($L != null) {\n", currentNullVarName);
+        code.indent();
+        code.addStatement("$L.clear()", currentNullVarName);
+        code.unindent();
+        code.add("}\n");
         code.unindent();
         code.add("}\n");
     }
