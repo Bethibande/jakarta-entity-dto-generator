@@ -58,7 +58,7 @@ public class DTOGenerator {
         final Object value = annotationValue.getValue();
 
         if (value instanceof javax.lang.model.type.TypeMirror typeMirror) {
-            return CodeBlock.of("$T", TypeName.get(typeMirror));
+            return CodeBlock.of("$T.class", TypeName.get(typeMirror));
         }
 
         if (value instanceof javax.lang.model.element.Element element) {
@@ -93,7 +93,38 @@ public class DTOGenerator {
             return CodeBlock.of("$S", name.toString());
         }
 
+        if (value instanceof String string) {
+            return CodeBlock.of("$S", string);
+        }
+
+        if (value instanceof Character character) {
+            return CodeBlock.of("$L", toCharacterLiteral(character));
+        }
+
+        if (value instanceof Long longValue) {
+            return CodeBlock.of("$LL", longValue);
+        }
+
+        if (value instanceof Float floatValue) {
+            return CodeBlock.of("$LF", floatValue);
+        }
+
         return CodeBlock.of("$L", value);
+    }
+
+    private String toCharacterLiteral(final char value) {
+        return switch (value) {
+            case '\b' -> "'\\b'";
+            case '\t' -> "'\\t'";
+            case '\n' -> "'\\n'";
+            case '\f' -> "'\\f'";
+            case '\r' -> "'\\r'";
+            case '\'' -> "'\\''";
+            case '\\' -> "'\\\\'";
+            default -> Character.isISOControl(value)
+                    ? String.format(Locale.ROOT, "'\\%03o'", (int) value)
+                    : "'" + value + "'";
+        };
     }
 
     protected List<AnnotationSpec> toAnnotationSpecs(final List<AnnotationMirror> annotationMirrors) {

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.bethibande.process"
-version = "1.8"
+version = "1.9"
 
 description = "Annotations for DTO generation"
 

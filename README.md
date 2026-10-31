@@ -24,8 +24,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.bethibande.process:annotations:1.8")
-    annotationProcessor("com.bethibande.process:processor:1.8")
+    implementation("com.bethibande.process:annotations:1.9")
+    annotationProcessor("com.bethibande.process:processor:1.9")
 }
 ```
 
